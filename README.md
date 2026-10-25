@@ -5,6 +5,7 @@ Welcome to Barks and Brews Cafe! υ´• ﻌ •`υ
 This is a Java CLI management application designed to automate daily operations, inventory management, point-of-sale transactions, and customer loyalty tracking for a dog-friendly cafe.
 ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
 Key Features & Role Access
+
 *The system enforces role-based permissions across four users:*
 
 **♡ Cashier (POS Counter Operations):** Processes customer orders, verifies stock levels in real time, looks up loyalty milestone rewards, calculates totals in Philippine Pesos (₱), and logs transactions.
