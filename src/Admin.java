@@ -50,35 +50,37 @@ public class Admin {
     }
 
    
-    // 1. MANAGE STAFF ACCOUNTS
-  
-    private static void manageStaffAccounts(Scanner scanner) {
-        System.out.println("\n--- Manage Staff Accounts ---");
-        System.out.println("1. View Current Staff Accounts");
-        System.out.println("2. Add New Staff Account");
-        System.out.print("Select action: ");
-        String choice = scanner.nextLine().trim();
+   private static void manageStaffAccounts(Scanner scanner) {
+    System.out.println("\n--- Manage Staff Accounts ---");
+    System.out.println("1. View Staff Accounts");
+    System.out.println("2. Add New Staff Account");
+    System.out.print("Select action: ");
+    String choice = scanner.nextLine().trim();
 
-        if (choice.equals("1")) {
-            System.out.println("\n--- Staff Accounts in " + USER_FILE + " ---");
-            displayUsersByRole("staff");
-        } else if (choice.equals("2")) {
-            System.out.print("Enter new staff username: ");
-            String username = scanner.nextLine().trim();
-            System.out.print("Enter password: ");
-            String password = scanner.nextLine().trim();
+    if (choice.equals("1")) {
+        System.out.println("\n--- Managers & Cashiers ---");
+        displayUsersByRole("Manager");
+        displayUsersByRole("Cashier");
+    } else if (choice.equals("2")) {
+        System.out.print("Enter new staff username: ");
+        String username = scanner.nextLine().trim();
+        System.out.print("Enter password: ");
+        String password = scanner.nextLine().trim();
+        
+        // Ask for specific role instead of hardcoding "staff"
+        System.out.println("Select Role: 1. Manager  2. Cashier");
+        System.out.print("Choice: ");
+        String roleChoice = scanner.nextLine().trim();
+        String role = roleChoice.equals("1") ? "Manager" : "Cashier";
 
-            if (!username.isEmpty() && !password.isEmpty()) {
-                appendUserRecord(username, password, "staff");
-                System.out.println("SUCCESS: Staff account '" + username + "' created!");
-            } else {
-                System.out.println("ERROR: Username and password cannot be empty.");
-            }
+        if (!username.isEmpty() && !password.isEmpty()) {
+            appendUserRecord(username, password, role); // ✅ Saves as "Manager" or "Cashier"
+            System.out.println("SUCCESS: " + role + " account '" + username + "' created!");
         } else {
-            System.out.println("Invalid choice.");
+            System.out.println("ERROR: Username and password cannot be empty.");
         }
     }
-
+}
 
     // 2. BROADCAST SHOP ANNOUNCEMENT (Admin Promo)
 
