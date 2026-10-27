@@ -48,7 +48,6 @@ public class Admin {
             }
         }
     }
-
    
    private static void manageStaffAccounts(Scanner scanner) {
     System.out.println("\n--- Manage Staff Accounts ---");
@@ -74,14 +73,13 @@ public class Admin {
         String role = roleChoice.equals("1") ? "Manager" : "Cashier";
 
         if (!username.isEmpty() && !password.isEmpty()) {
-            appendUserRecord(username, password, role); // ✅ Saves as "Manager" or "Cashier"
+            appendUserRecord(username, password, role); 
             System.out.println("SUCCESS: " + role + " account '" + username + "' created!");
         } else {
             System.out.println("ERROR: Username and password cannot be empty.");
         }
     }
 }
-
     // 2. BROADCAST SHOP ANNOUNCEMENT (Admin Promo)
 
     private static void broadcastAdminPromo(Scanner scanner) {
@@ -180,7 +178,6 @@ public class Admin {
    
     // FILE HELPER METHODS
    
-
     private static void ensureNotificationFileExists() {
         File file = new File(NOTIFICATIONS_FILE);
         try {
