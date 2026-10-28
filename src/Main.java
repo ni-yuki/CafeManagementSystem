@@ -54,10 +54,14 @@ public class Main {
             } else {
                 // --- MENU FOR LOGGED IN USERS ---
                 // Show who is logged in and what their role is (Admin, Manager, etc.)
-                System.out.println("Logged in as: " + currentUsername + " (" + currentRole + ")");
+                System.out.println("Logged in as: " + currentUsername + " (" + currentRole + ", ID: " + currentUserId + ")"); // NEW: shows ID
                 System.out.println("------------------------------------------");
                 System.out.println("1. View My Role Permissions");
-                System.out.println("2. Logout");
+                // NEW: only managers see the inventory option
+                if (currentRole.equals("Manager")) {
+                    System.out.println("2. Inventory Management");
+                }
+                System.out.println("3. Logout");
                 System.out.print("Choose an option: ");
 
                 String choice = scanner.nextLine().trim();
@@ -67,14 +71,30 @@ public class Main {
                         // Show what this specific user is allowed to do
                         displayRolePermissions();
                         break;
-                    case "2":
+                    case "2":                                  // NEW
+                        // Open the manager inventory screen (managers only)
+                        openManagerMenu(scanner);
+                        break;
+                    case "3":
                         // Log the user out
                         logout();
                         break;
                     default:
-                        System.out.println("Invalid selection. Please choose 1 or 2.");
+                        System.out.println("Invalid selection.");
                 }
             }
+        }
+    }
+
+    /*
+    NEW: This method gives the Manager access to the inventory screen (Manager.java).
+    It checks the logged-in role first, so Admins, Cashiers and Customers cannot open it.
+     */
+    private static void openManagerMenu(Scanner scanner) {
+        if (currentRole != null && currentRole.equals("Manager")) {
+            Manager.managerMenu(scanner);
+        } else {
+            System.out.println("Access denied. Only the Manager (Kitchen & Kennel Manager) can open inventory.");
         }
     }
 
@@ -85,11 +105,11 @@ public class Main {
     public static void checkOrCreateUserFile() {
         try {
             File file = new File(USER_FILE);
-            
+
             // createNewFile() returns true if the file was just created, false if it already exists
             if (file.createNewFile()) {
                 System.out.println("[SYSTEM INFO] 'users.txt' not found. Creating default accounts...");
-                
+
                 // FileWriter writes text into our newly created file
                 try (FileWriter writer = new FileWriter(file)) {
                     // Write 4 default accounts. Format is: UserID,Username,Password,Role
@@ -122,7 +142,7 @@ public class Main {
             // Read the file line by line until there are no more lines
             while (fileScanner.hasNextLine()) {
                 String line = fileScanner.nextLine().trim();
-                
+
                 // Skip empty lines so the program doesn't crash
                 if (line.isEmpty()) {
                     continue;
@@ -143,7 +163,7 @@ public class Main {
                     // Check if what the user typed matches what is saved in the file
                     // .equals() is used to compare Strings in Java
                     if (storedUsername.equals(inputUsername) && storedPassword.equals(inputPassword)) {
-                        
+
                         // Match found! Save their info to the tracking variables
                         currentUserId = storedId;
                         currentUsername = storedUsername;
@@ -151,7 +171,7 @@ public class Main {
 
                         System.out.println("\n Login Successful! Welcome, " + currentUsername + ".");
                         System.out.println("Role Assigned: [" + currentRole + "]");
-                        
+
                         return true; // Stop searching and return success
                     }
                 }
@@ -167,18 +187,18 @@ public class Main {
     }
 
     /*
-    This method simply resets the tracking variables back to null, 
+    This method simply resets the tracking variables back to null,
     making the system forget who was logged in.
      */
     public static void logout() {
         if (currentUsername != null) {
             System.out.println("\n Logging out " + currentUsername + "...");
-            
+
             // Erase the current user's session data
             currentUserId = null;
             currentUsername = null;
             currentRole = null;
-            
+
             System.out.println("You have been successfully logged out.");
         } else {
             System.out.println("No user is currently logged in.");
@@ -190,7 +210,7 @@ public class Main {
      */
     private static void displayRolePermissions() {
         System.out.println("\n--- ACCESS PERMISSIONS FOR ROLE: [" + currentRole.toUpperCase() + "] ---");
-        
+
         // Checks the value of currentRole and runs the matching block of code
         switch (currentRole) {
             case "Admin":

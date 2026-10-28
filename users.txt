@@ -1,0 +1,4 @@
+101,admin,admin123,Admin
+102,manager,mgr123,Manager
+103,cashier,cashier123,Cashier
+C101,sarah,user123,Customer

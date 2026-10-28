@@ -1,0 +1,16 @@
+H101|Human_Drink|Caramel Macchiato|220.00|20
+H102|Human_Drink|Iced Matcha Latte|235.00|15
+H103|Human_Drink|Cold Brew Coffee|185.00|25
+H104|Human_Drink|Chocolate Frappucino|200.00|22
+H105|Human_Food|Blueberry Muffin|160.00|10
+H106|Human_Food|Butter Croissant|140.00|12
+H107|Human_Food|Tiramisu|200.00|9
+H108|Human_Food|Macaroons|190.00|12
+D201|Dog_Drink|Classic Puppuccino|175.00|30
+D202|Dog_Drink|Dog Chamomile Tea|195.00|4
+D203|Dog_Drink|Goat Milk Latte|180.00|15
+D204|Dog_Drink|Bone Broth Refresher|165.00|12
+D205|Dog_Treat|Peanut Butter Bites|125.00|3
+D206|Dog_Treat|Chicken Jerky Crunch|140.00|20
+D207|Dog_Treat|Pupsicle Berry Freeze|160.00|2
+D208|Dog_Treat|Salmon Chew Stick|150.00|18
