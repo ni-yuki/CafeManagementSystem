@@ -1,4 +1,7 @@
 101,admin,admin123,Admin
 102,manager,mgr123,Manager
 103,cashier,cashier123,Cashier
-C101,sarah,user123,Customer
+201,customer1,pass123,Customer
+202,customer2,pass123,Customer
+203,customer3,pass123,Customer
+204,customer4,pass123,Customer
