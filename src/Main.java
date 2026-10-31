@@ -57,8 +57,9 @@ public class Main {
                 System.out.println("Logged in as: " + currentUsername + " (" + currentRole + ", ID: " + currentUserId + ")"); // NEW: shows ID
                 System.out.println("------------------------------------------");
                 System.out.println("1. View My Role Permissions");
-                // NEW: only managers see the inventory option
-                if (currentRole.equals("Manager")) {
+                if (currentRole.equals("Admin")) {
+                    System.out.println("2. Admin Dashboard");
+                } else if (currentRole.equals("Manager")) {
                     System.out.println("2. Inventory Management");
                 }
                 System.out.println("3. Logout");
@@ -71,9 +72,13 @@ public class Main {
                         // Show what this specific user is allowed to do
                         displayRolePermissions();
                         break;
-                    case "2":                                  // NEW
-                        // Open the manager inventory screen (managers only)
-                        openManagerMenu(scanner);
+                    case "2":
+                        if ("Admin".equals(currentRole)) {
+                            Admin.showMenu(scanner, currentUserId, currentUsername);
+                            logout();
+                        } else {
+                            openManagerMenu(scanner);
+                        }
                         break;
                     case "3":
                         // Log the user out
@@ -112,11 +117,14 @@ public class Main {
 
                 // FileWriter writes text into our newly created file
                 try (FileWriter writer = new FileWriter(file)) {
-                    // Write 4 default accounts. Format is: UserID,Username,Password,Role
+                    // Write default staff and customer accounts. Format is: UserID,Username,Password,Role
                     writer.write("101,admin,admin123,Admin\n");
                     writer.write("102,manager,mgr123,Manager\n");
                     writer.write("103,cashier,cashier123,Cashier\n");
-                    writer.write("C101,sarah,user123,Customer\n");
+                    writer.write("201,customer1,pass123,Customer\n");
+                    writer.write("202,customer2,pass123,Customer\n");
+                    writer.write("203,customer3,pass123,Customer\n");
+                    writer.write("204,customer4,pass123,Customer\n");
                 }
                 System.out.println("[SYSTEM INFO] Default accounts successfully written to 'users.txt'.");
             }
