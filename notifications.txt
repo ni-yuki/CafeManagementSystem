@@ -1,0 +1,4 @@
+customer1|UNREAD|[PROMO ANNOUNCEMENT] Buy 1 Get 1 Free on all Puppuccinos this weekend!
+customer2|UNREAD|[PROMO ANNOUNCEMENT] Buy 1 Get 1 Free on all Puppuccinos this weekend!
+customer3|UNREAD|[PROMO ANNOUNCEMENT] Buy 1 Get 1 Free on all Puppuccinos this weekend!
+customer4|UNREAD|[PROMO ANNOUNCEMENT] Buy 1 Get 1 Free on all Puppuccinos this weekend!

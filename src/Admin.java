@@ -1,293 +1,426 @@
-import java.io.*;
-import java.util.*;
+import java.util.Scanner;
 
+/*
+ * Admin.java - System Administration & Analytics
+ * CRUD on staff accounts (users.txt), promo broadcasts and stamp reminders
+ * (notifications.txt), and sales/revenue reports (sales.txt)
+ */
 public class Admin {
 
-    private static final File NOTIFICATIONS_FILE = new File("notifications.txt");
-    private static final File USER_FILE = new File("users.txt");
+    // =========================================================================
+    // ADMIN MENU
+    // =========================================================================
 
-    public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
-        showMenu(scanner, "101", "admin");
-    }
+    static void adminMenu(Scanner scanner, String adminUsername) {
+        // Keep showing the Admin menu until the admin goes back
+        boolean running = true;
+        while (running) {
+            Main.printHeader("ADMIN DASHBOARD");
+            System.out.println("[1] Manage Staff Accounts");
+            System.out.println("[2] Broadcast Promo to All Customers");
+            System.out.println("[3] Send Stamp Reminder to a Customer");
+            System.out.println("[4] Sales & Revenue Report");
+            System.out.println("[5] Back to Main Menu");
+            // Read the admin's choice
+            String choice = Main.ask(scanner, "Choose an option: ");
 
-    public static void showMenu(Scanner scanner, String currentUserId, String currentUsername) {
-        ensureFileExists(NOTIFICATIONS_FILE);
-        seedSampleData();
-
-        boolean adminSession = true;
-        while (adminSession) {
-            System.out.println("\n==========================================");
-            System.out.println("             ADMIN DASHBOARD              ");
-            System.out.println("==========================================");
-            System.out.println("1. Manage Staff Accounts");
-            System.out.println("2. Broadcast Shop Announcement (Promo)");
-            System.out.println("3. Send Post-Purchase Stamp Reminder");
-            System.out.println("4. Logout");
-            System.out.print("Choose an option: ");
-
-            String choice = scanner.nextLine().trim();
-
+            // Run the chosen option
             switch (choice) {
                 case "1":
-                    manageStaffAccounts(scanner);
+                    manageStaffAccounts(scanner, adminUsername);
                     break;
                 case "2":
-                    broadcastAdminPromo(scanner);
+                    broadcastPromo(scanner);
                     break;
                 case "3":
-                    sendPostPurchaseStampReminder(scanner);
+                    sendStampReminder(scanner);
                     break;
                 case "4":
-                    adminSession = false;
+                    salesReport();
+                    break;
+                case "5":
+                    // Stop the loop to go back to the main menu
+                    running = false;
                     break;
                 default:
-                    System.out.println("Invalid option. Please try again.");
+                    System.out.println("Invalid selection. Please choose 1-5.");
             }
         }
     }
 
-    private static void manageStaffAccounts(Scanner scanner) {
-        System.out.println("\n--- Manage Staff Accounts ---");
-        System.out.println("1. View Staff Accounts\n2. Add New Staff Account");
-        System.out.print("Select action: ");
-        String choice = scanner.nextLine().trim();
+    // =========================================================================
+    // STAFF ACCOUNTS (Create, Get, Update, Delete)
+    // users.txt line format: userId,username,password,role
+    // =========================================================================
+
+    static void manageStaffAccounts(Scanner scanner, String adminUsername) {
+        // Keep showing the staff menu until the admin goes back
+        boolean managing = true;
+        while (managing) {
+            System.out.println("\n--- MANAGE STAFF ACCOUNTS ---");
+            System.out.println("[1] View Staff Accounts");
+            System.out.println("[2] Add New Staff Account");
+            System.out.println("[3] Update Staff Account");
+            System.out.println("[4] Delete Staff Account");
+            System.out.println("[5] Back");
+            // Read which staff action to do
+            String choice = Main.ask(scanner, "Select action: ");
+
+            // Run the chosen option
+            switch (choice) {
+                case "1":
+                    // Show all staff accounts
+                    viewStaff();
+                    break;
+                case "2":
+                    addStaff(scanner);
+                    break;
+                case "3":
+                    updateStaff(scanner);
+                    break;
+                case "4":
+                    deleteStaff(scanner, adminUsername);
+                    break;
+                case "5":
+                    // Stop the loop to go back to the Admin menu
+                    managing = false;
+                    break;
+                default:
+                    System.out.println("Invalid selection. Please choose 1-5.");
+            }
+        }
+    }
+
+    static boolean isStaffRole(String role) {
+        // Only these three roles count as staff
+        return role.equals("Admin") || role.equals("Manager") || role.equals("Cashier");
+    }
+
+    // Get
+    static void viewStaff() {
+        // Load all accounts from users.txt
+        String[] users = Main.readLines(Main.USER_FILE);
+        System.out.println("\n" + Main.pad("ID", 6) + Main.pad("Username", 16) + "Role");
+        System.out.println("------------------------------");
+        // Go through every account
+        for (String line : users) {
+            String[] parts = line.split(",");
+            // Show only Admin, Manager and Cashier accounts (not customers)
+            if (parts.length == 4 && isStaffRole(parts[3])) {
+                System.out.println(Main.pad(parts[0], 6) + Main.pad(parts[1], 16) + parts[3]);
+            }
+        }
+    }
+
+    static String askRole(Scanner scanner) {
+        // The admin picks the role by number
+        String roleChoice = Main.ask(scanner, "Select Role ([1] Manager / [2] Cashier): ");
+        if (roleChoice.equals("1")) {
+            return "Manager";
+        } else if (roleChoice.equals("2")) {
+            return "Cashier";
+        }
+        System.out.println("Error: Invalid role. Choose 1 for Manager or 2 for Cashier.");
+        return "";
+    }
+
+    // Create
+    static void addStaff(Scanner scanner) {
+        System.out.println("\n--- ADD NEW STAFF ACCOUNT ---");
+        // Ask for the details of the new account
+        String username = Main.ask(scanner, "Enter new staff username: ");
+        // Username cannot be empty or contain spaces, commas or |
+        if (!Main.isValidText(username) || username.contains(" ")) {
+            System.out.println("Error: Username cannot be empty or contain spaces, commas, or |.");
+            return;
+        }
+        // Do not allow a username that already exists
+        if (Main.findUserIndex(Main.readLines(Main.USER_FILE), username) != -1) {
+            System.out.println("Error: That username already exists.");
+            return;
+        }
+
+        String password = Main.ask(scanner, "Enter password: ");
+        if (!Main.isValidText(password)) {
+            System.out.println("Error: Password cannot be empty or contain commas or |.");
+            return;
+        }
+
+        String role = askRole(scanner);
+        if (role.length() == 0) {
+            return;
+        }
+
+        // Get a new unique user ID
+        int userId = Main.getNextUserId();
+        // Add the new account at the end of users.txt
+        if (Main.appendLine(Main.USER_FILE, userId + "," + username + "," + password + "," + role)) {
+            System.out.println("SUCCESS: " + role + " account '" + username + "' created with ID " + userId + ".");
+        }
+    }
+
+    // Asks for a Manager/Cashier username. Returns its index in users, or -1.
+    static int askStaffIndex(Scanner scanner, String[] users) {
+        // Show the staff list first so the admin can pick one
+        viewStaff();
+        String username = Main.ask(scanner, "\nEnter staff username: ");
+        // Find the position of that username
+        int index = Main.findUserIndex(users, username);
+        if (index == -1) {
+            System.out.println("Error: User '" + username + "' not found.");
+            return -1;
+        }
+        String[] parts = users[index].split(",");
+        // Admin accounts are protected and cannot be changed here
+        if (parts[3].equals("Admin")) {
+            System.out.println("Error: Admin accounts cannot be changed here.");
+            return -1;
+        }
+        if (!isStaffRole(parts[3])) {
+            System.out.println("Error: '" + username + "' is not a staff account.");
+            return -1;
+        }
+        return index;
+    }
+
+    // Update
+    static void updateStaff(Scanner scanner) {
+        System.out.println("\n--- UPDATE STAFF ACCOUNT ---");
+        // Load all accounts from users.txt
+        String[] users = Main.readLines(Main.USER_FILE);
+        // Ask which staff account to use
+        int index = askStaffIndex(scanner, users);
+        if (index == -1) {
+            return;
+        }
+
+        String[] parts = users[index].split(",");
+        System.out.println("[1] Change Password\n2. Change Role (currently " + parts[3] + ")");
+        // Ask whether to change the password or the role
+        String choice = Main.ask(scanner, "Select action: ");
 
         if (choice.equals("1")) {
-            System.out.println("\n--- Managers & Cashiers ---");
-            displayUsersByRole("Manager");
-            displayUsersByRole("Cashier");
+            String newPassword = Main.ask(scanner, "Enter new password: ");
+            if (!Main.isValidText(newPassword)) {
+                System.out.println("Error: Password cannot be empty or contain commas or |.");
+                return;
+            }
+            // Replace the old password
+            parts[2] = newPassword;
         } else if (choice.equals("2")) {
-            System.out.print("Enter new staff username: ");
-            String username = scanner.nextLine().trim();
-
-            System.out.print("Enter password: ");
-            String password = scanner.nextLine().trim();
-
-            System.out.print("Select Role (1. Manager / 2. Cashier): ");
-            String roleChoice = scanner.nextLine().trim();
-
-            if (!roleChoice.equals("1") && !roleChoice.equals("2")) {
-                System.out.println("Invalid role. Choose 1 for Manager or 2 for Cashier.");
+            String newRole = askRole(scanner);
+            if (newRole.length() == 0) {
                 return;
             }
-
-            String role = roleChoice.equals("1") ? "Manager" : "Cashier";
-
-            if (username.isEmpty() || password.isEmpty() || username.contains(",") || password.contains(",")) {
-                System.out.println("ERROR: Username and password cannot be empty or contain commas.");
-                return;
-            }
-
-            try {
-                if (userExists(username)) {
-                    System.out.println("ERROR: That username already exists.");
-                    return;
-                }
-
-                String userId = getNextUserId();
-                if (appendToFile(USER_FILE, userId + "," + username + "," + password + "," + role)) {
-                    System.out.println("SUCCESS: " + role + " account '" + username + "' created!");
-                } else {
-                    System.out.println("ERROR: The staff account could not be saved.");
-                }
-            } catch (IOException e) {
-                System.err.println("ERROR reading user file: " + e.getMessage());
-            }
-        }
-    }
-
-    private static void broadcastAdminPromo(Scanner scanner) {
-        System.out.println("\n--- Broadcast Shop Announcement ---");
-        System.out.print("Enter Customer Username (customer1, customer2, customer3, or customer4): ");
-        String targetCustomer = scanner.nextLine().trim();
-
-        if (!validateCustomer(targetCustomer)) {
-            return;
-        }
-
-        System.out.print("Enter promo message: ");
-        String promoMessage = scanner.nextLine().trim();
-
-        if (promoMessage.isEmpty()) {
-            System.out.println("Message cannot be empty.");
-            return;
-        }
-
-        if (appendNotification(targetCustomer, "[PROMO ANNOUNCEMENT] " + promoMessage)) {
-            System.out.println("Promo sent to '" + targetCustomer + "'.");
+            // Replace the old role
+            parts[3] = newRole;
         } else {
-            System.out.println("ERROR: Could not send the announcement to '" + targetCustomer + "'.");
-        }
-    }
-
-    public static void sendPostPurchaseStampReminder(Scanner scanner) {
-        System.out.println("\n--- Send Stamp Reminder ---");
-        System.out.print("Enter Customer Username (customer1 to customer4): ");
-        String exactCustomer = scanner.nextLine().trim();
-
-        if (!validateCustomer(exactCustomer)) {
+            System.out.println("Invalid selection.");
             return;
         }
 
-        System.out.print("Enter Current Stamp Count: ");
-        try {
-            int stamps = Integer.parseInt(scanner.nextLine().trim());
-            String message = "[STAMP REMINDER] Thank you for your purchase! You currently have " + stamps + " stamp(s). Collect 10 to redeem a free drink!";
-
-            if (appendNotification(exactCustomer, message)) {
-                System.out.println("SUCCESS: Stamp reminder sent to '" + exactCustomer + "'.");
-            } else {
-                System.out.println("ERROR: The stamp reminder could not be saved.");
-            }
-        } catch (NumberFormatException e) {
-            System.out.println("ERROR: Stamp count must be a valid number.");
+        // Put the updated account back into the array
+        users[index] = parts[0] + "," + parts[1] + "," + parts[2] + "," + parts[3];
+        // Save all accounts back to the file
+        if (Main.writeLines(Main.USER_FILE, users, users.length)) {
+            System.out.println("SUCCESS: Account '" + parts[1] + "' updated.");
         }
     }
 
-    private static void seedSampleData() {
-        ensureFileExists(USER_FILE);
-        ensureFileExists(NOTIFICATIONS_FILE);
-        if (NOTIFICATIONS_FILE.length() == 0) {
-            seedDefaultNotifications();
+    // Delete
+    static void deleteStaff(Scanner scanner, String adminUsername) {
+        System.out.println("\n--- DELETE STAFF ACCOUNT ---");
+        // Load all accounts from users.txt
+        String[] users = Main.readLines(Main.USER_FILE);
+        // Ask which staff account to use
+        int index = askStaffIndex(scanner, users);
+        if (index == -1) {
+            return;
         }
-    }
 
-    private static void seedDefaultNotifications() {
-        String promoMsg = "[PROMO ANNOUNCEMENT] Buy 1 Get 1 Free on all Milk Teas this weekend!";
-        appendNotification("customer1", promoMsg);
-        appendNotification("customer2", promoMsg);
-        appendNotification("customer3", promoMsg);
-        appendNotification("customer4", promoMsg);
-
-        appendNotification("customer1", createStampMessage(3));
-        appendNotification("customer2", createStampMessage(9));
-        appendNotification("customer3", createStampMessage(10));
-        appendNotification("customer4", createStampMessage(5));
-    }
-
-    private static String createStampMessage(int stampCount) {
-        return "[STAMP REMINDER] Thank you for your purchase! You currently have " + stampCount + " stamp(s). Collect 10 to redeem a free drink!";
-    }
-
-    private static void ensureFileExists(File file) {
-        try {
-            if (!file.exists()) {
-                file.createNewFile();
-            }
-        } catch (IOException e) {
-            System.err.println("ERROR creating file: " + e.getMessage());
+        String[] parts = users[index].split(",");
+        // Ask for Y or N before deleting
+        String confirm = Main.ask(scanner, "Delete " + parts[3] + " account '" + parts[1] + "'? (Y/N): ");
+        if (!confirm.toUpperCase().equals("Y")) {
+            System.out.println("Delete cancelled.");
+            return;
         }
-    }
 
-    private static boolean appendNotification(String customerId, String message) {
-        return appendToFile(NOTIFICATIONS_FILE, customerId + "|UNREAD|" + message);
-    }
-
-    private static boolean appendToFile(File file, String content) {
-        try (PrintWriter writer = new PrintWriter(new FileWriter(file, true))) {
-            writer.println(content);
-            return true;
-        } catch (IOException e) {
-            System.err.println("ERROR writing to file: " + e.getMessage());
-            return false;
-        }
-    }
-
-    private static List<String> getUsersByRole(String role) {
-        List<String> users = new ArrayList<>();
-        if (USER_FILE.exists()) {
-            try (BufferedReader reader = new BufferedReader(new FileReader(USER_FILE))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    String[] parts = line.split(",", -1);
-                    if (parts.length >= 4 && parts[3].trim().equalsIgnoreCase(role)) {
-                        users.add(parts[1].trim());
-                    }
-                }
-            } catch (IOException e) {
-                System.err.println("ERROR reading user file: " + e.getMessage());
+        // Copy every account except the deleted one
+        // A smaller array that will hold every account except the deleted one
+        String[] remaining = new String[users.length - 1];
+        int next = 0;
+        for (int i = 0; i < users.length; i++) {
+            if (i != index) {
+                remaining[next] = users[i];
+                next++;
             }
         }
-        return users;
-    }
-
-    private static boolean validateCustomer(String username) {
-        if (!isSupportedCustomer(username)) {
-            System.out.println("ERROR: Customer username must be customer1, customer2, customer3, or customer4.");
-            return false;
+        // Save only the remaining accounts
+        if (Main.writeLines(Main.USER_FILE, remaining, remaining.length)) {
+            System.out.println("SUCCESS: Account '" + parts[1] + "' deleted.");
         }
-        try {
-            if (isCustomerAccount(username)) {
-                return true;
-            }
-            System.out.println("ERROR: Customer username '" + username + "' is not registered.");
-        } catch (IOException e) {
-            System.err.println("ERROR checking customer username: " + e.getMessage());
-        }
-        return false;
     }
 
-    private static boolean isSupportedCustomer(String username) {
-        return username.equals("customer1") || username.equals("customer2") || username.equals("customer3") || username.equals("customer4");
-    }
+    // =========================================================================
+    // CUSTOMER LIST HELPER
+    // =========================================================================
 
-    private static boolean userExists(String username) throws IOException {
-        String normalizedInput = username.trim().toLowerCase();
-        if (!USER_FILE.exists()) return false;
-
-        try (BufferedReader reader = new BufferedReader(new FileReader(USER_FILE))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",", -1);
-                if (parts.length >= 4 && parts[1].trim().toLowerCase().equals(normalizedInput)) {
-                    return true;
-                }
+    static String[] getCustomerUsernames() {
+        // Load all accounts from users.txt
+        String[] users = Main.readLines(Main.USER_FILE);
+        // First count the customers so we know the array size
+        int count = 0;
+        for (String line : users) {
+            String[] parts = line.split(",");
+            if (parts.length == 4 && parts[3].equals("Customer")) {
+                count++;
             }
         }
-        return false;
-    }
 
-    private static boolean isCustomerAccount(String username) throws IOException {
-        String normalizedInput = username.trim().toLowerCase();
-        if (!USER_FILE.exists()) return false;
-
-        try (BufferedReader reader = new BufferedReader(new FileReader(USER_FILE))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",", -1);
-                if (parts.length >= 4 && parts[1].trim().toLowerCase().equals(normalizedInput) && parts[3].trim().equalsIgnoreCase("Customer")) {
-                    return true;
-                }
+        // Second pass: store the customer usernames
+        String[] customers = new String[count];
+        int index = 0;
+        for (String line : users) {
+            String[] parts = line.split(",");
+            if (parts.length == 4 && parts[3].equals("Customer")) {
+                customers[index] = parts[1];
+                index++;
             }
         }
-        return false;
+        return customers;
     }
 
-    private static String getNextUserId() throws IOException {
-        int largestId = 0;
-        if (USER_FILE.exists()) {
-            try (BufferedReader reader = new BufferedReader(new FileReader(USER_FILE))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    String[] parts = line.split(",", -1);
-                    if (parts.length >= 4) {
-                        try {
-                            largestId = Math.max(largestId, Integer.parseInt(parts.trim()));
-                        } catch (NumberFormatException e) {
-                            // Non-numeric customer IDs skipped
-                        }
-                    }
-                }
+    // =========================================================================
+    // PROMO BROADCAST (to every customer inbox)
+    // =========================================================================
+
+    static void broadcastPromo(Scanner scanner) {
+        System.out.println("\n--- BROADCAST SHOP ANNOUNCEMENT ---");
+        // Type the announcement for all customers
+        String promo = Main.ask(scanner, "Enter promo message: ");
+        if (promo.length() == 0 || promo.contains("|")) {
+            System.out.println("Error: Message cannot be empty or contain |.");
+            return;
+        }
+
+        // Get the usernames of all customers
+        String[] customers = getCustomerUsernames();
+        // Count how many messages were sent
+        int sent = 0;
+        // Send the message to every customer's inbox
+        for (String customer : customers) {
+            if (Main.sendNotification(customer, "[PROMO ANNOUNCEMENT] " + promo)) {
+                sent++;
             }
         }
-        return String.valueOf(largestId + 1);
+        System.out.println("SUCCESS: Promo sent to " + sent + " customer inbox(es).");
     }
 
-    private static void displayUsersByRole(String role) {
-        List<String> users = getUsersByRole(role);
-        for (String user : users) {
-            System.out.println("- " + user);
+    // =========================================================================
+    // STAMP REMINDER (stamp count is read from loyalty_card.txt)
+    // =========================================================================
+
+    static void sendStampReminder(Scanner scanner) {
+        System.out.println("\n--- SEND STAMP REMINDER ---");
+        // Get the usernames of all customers
+        String[] customers = getCustomerUsernames();
+        // Show each customer with their stamp count
+        for (String customer : customers) {
+            int stamps = Customer.getStamps(customer);
+            String stampText = (stamps == -1) ? "no card" : stamps + "/" + Customer.STAMP_GOAL + " stamps";
+            System.out.println("- " + customer + " (" + stampText + ")");
+        }
+
+        // Choose which customer gets the reminder
+        String username = Main.ask(scanner, "Enter customer username: ");
+        // It must be a real customer account
+        if (!Main.getRoleOf(username).equals("Customer")) {
+            System.out.println("Error: '" + username + "' is not a registered customer.");
+            return;
+        }
+        // Read the real stamp count from loyalty_card.txt
+        int stamps = Customer.getStamps(username);
+        // -1 means the customer has no loyalty card
+        if (stamps == -1) {
+            System.out.println("Error: '" + username + "' does not have a loyalty card.");
+            return;
+        }
+
+        // Find the next milestone reward
+        // Build the reminder text
+        String message = "[STAMP REMINDER] You currently have " + stamps + "/" + Customer.STAMP_GOAL + " stamps.";
+        // Find the next reward the customer has not reached yet
+        for (int i = 0; i < Customer.REWARD_STAMPS.length; i++) {
+            if (Customer.REWARD_STAMPS[i] > stamps) {
+                int visitsLeft = Customer.REWARD_STAMPS[i] - stamps;
+                message += " Only " + visitsLeft + " more visit(s) to get: " + Customer.REWARD_NAMES[i] + "!";
+                break;
+            }
+        }
+
+        // Save the reminder in the customer's inbox
+        if (Main.sendNotification(username, message)) {
+            System.out.println("SUCCESS: Stamp reminder sent to '" + username + "'.");
+        }
+    }
+
+    // =========================================================================
+    // SALES & REVENUE REPORT
+    // sales.txt line format: receiptId,cashier,cardId,items,playgroundFee,discount,total
+    // =========================================================================
+
+    static void salesReport() {
+        // Load every saved sale from sales.txt
+        String[] sales = Main.readLines(Main.SALES_FILE);
+        System.out.println("\n--- SALES TRANSACTION LOG ---");
+        // Nothing to show if no sale was made yet
+        if (sales.length == 0) {
+            System.out.println("No sales recorded yet.");
+            return;
+        }
+
+        // Totals that will be added up below
+        double totalRevenue = 0;
+        double totalPlayground = 0;
+        double totalDiscounts = 0;
+        int transactions = 0;
+
+        // Read each sale line
+        for (String line : sales) {
+            String[] parts = line.split(",");
+            // Skip lines that are not complete
+            if (parts.length != 7) {
+                continue;
+            }
+            try {
+                // Change the text amounts into numbers
+                double playground = Double.parseDouble(parts[4]);
+                double discount = Double.parseDouble(parts[5]);
+                double total = Double.parseDouble(parts[6]);
+
+                System.out.println(parts[0] + " | Cashier: " + parts[1] + " | Card: " + parts[2]);
+                System.out.println("   Items: " + parts[3]);
+                System.out.println("   Total: " + Main.peso(total));
+
+                // Add this sale to the totals
+                totalRevenue += total;
+                totalPlayground += playground;
+                totalDiscounts += discount;
+                transactions++;
+            } catch (NumberFormatException e) {
+                System.out.println("Skipped bad sales line: " + line);
+            }
+        }
+
+        System.out.println("\n========== REVENUE SUMMARY ==========");
+        System.out.println("Transactions:          " + transactions);
+        System.out.println("Total Revenue:         " + Main.peso(totalRevenue));
+        System.out.println("Dog Playground Fees:   " + Main.peso(totalPlayground));
+        System.out.println("Loyalty Discounts:     " + Main.peso(totalDiscounts));
+        // Only compute the average when there is at least one sale
+        if (transactions > 0) {
+            System.out.println("Average per Order:     " + Main.peso(totalRevenue / transactions));
         }
     }
 }

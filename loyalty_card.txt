@@ -1,0 +1,4 @@
+LC201,customer1,1
+LC202,customer2,4
+LC203,customer3,7
+LC204,customer4,9
