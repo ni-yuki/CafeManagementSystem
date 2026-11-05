@@ -3,23 +3,24 @@ import java.util.Scanner;
 
 public class Main {
 
-    // The name of the file where we save our user accounts
+    // --- FILE LOCATION & SESSION TRACKING ---
+    // The name of the text file where user account credentials are stored
     private static final String USER_FILE = "users.txt";
 
-    // Variables to remember who is currently logged in.
-    // They are 'null' at the start because no one is logged in yet.
-    private static String currentUserId = null;
-    private static String currentUsername = null;
-    private static String currentRole = null;
+    // Variables to remember who is currently logged in (set to null when logged out)
+    private static String currentUserId = null;     // Stores active user ID (e.g., "101", "103", "201")
+    private static String currentUsername = null;   // Stores active username (e.g., "cashier")
+    private static String currentRole = null;       // Stores active role ("Admin", "Manager", "Cashier", "Customer")
 
     public static void main(String[] args) {
 
+        // Scanner object to read user input from the console
         Scanner scanner = new Scanner(System.in);
 
-        // Before starting the menu, make sure the user file exists so we can log in
+        // Ensure "users.txt" exists with default test accounts before running
         checkOrCreateUserFile();
 
-        // This keeps our program running in a loop until the user chooses to exit
+        // Controls the main application execution loop
         boolean systemRunning = true;
 
         while (systemRunning) {
@@ -27,24 +28,24 @@ public class Main {
             System.out.println("        BARKS & BREWS CAFE SYSTEM      ");
             System.out.println("=========================================");
 
-            // Check if someone is logged in. If currentRole is null, no one is logged in.
+            // --- CHECK IF A USER IS LOGGED IN ---
             if (currentRole == null) {
-                // --- MENU FOR GUESTS (NOT LOGGED IN) ---
+                // =============================================================
+                // GUEST MENU (NOT LOGGED IN)
+                // =============================================================
                 System.out.println("1. Login");
                 System.out.println("2. Exit System");
                 System.out.print("Choose an option: ");
 
-                // Read the user's choice and remove any extra spaces
                 String choice = scanner.nextLine().trim();
 
-                // Decide what to do based on the choice
                 switch (choice) {
                     case "1":
-                        // Go to the login process
+                        // Start login credential verification
                         login(scanner);
                         break;
                     case "2":
-                        // Stop the loop to exit the program
+                        // Exit the program
                         System.out.println("\nThank you for using Barks & Brews System! Goodbye.");
                         systemRunning = false;
                         break;
@@ -52,16 +53,25 @@ public class Main {
                         System.out.println("Invalid selection. Please choose 1 or 2.");
                 }
             } else {
-                // --- MENU FOR LOGGED IN USERS ---
-                // Show who is logged in and what their role is (Admin, Manager, etc.)
-                System.out.println("Logged in as: " + currentUsername + " (" + currentRole + ", ID: " + currentUserId + ")"); // NEW: shows ID
+                // =============================================================
+                // LOGGED-IN DASHBOARD (ROLE-BASED MENU)
+                // =============================================================
+                // Display user header showing Username, Role, and User ID
+                System.out.println("Logged in as: " + currentUsername + " (" + currentRole + ", ID: " + currentUserId + ")");
                 System.out.println("------------------------------------------");
                 System.out.println("1. View My Role Permissions");
+
+                // Displays Option 2 dynamically according to user's assigned role
                 if (currentRole.equals("Admin")) {
                     System.out.println("2. Admin Dashboard");
                 } else if (currentRole.equals("Manager")) {
                     System.out.println("2. Inventory Management");
+                } else if (currentRole.equals("Cashier")) {
+                    System.out.println("2. Cashier POS Counter");
+                } else if (currentRole.equals("Customer")) {
+                    System.out.println("2. My Loyalty Card & Inbox");
                 }
+
                 System.out.println("3. Logout");
                 System.out.print("Choose an option: ");
 
@@ -69,19 +79,26 @@ public class Main {
 
                 switch (choice) {
                     case "1":
-                        // Show what this specific user is allowed to do
+                        // Show permission breakdown for the logged-in role
                         displayRolePermissions();
                         break;
                     case "2":
+                        // Route user based on their specific role
                         if ("Admin".equals(currentRole)) {
                             Admin.showMenu(scanner, currentUserId, currentUsername);
                             logout();
-                        } else {
+                        } else if ("Manager".equals(currentRole)) {
                             openManagerMenu(scanner);
+                        } else if ("Cashier".equals(currentRole)) {
+                            openCashierMenu(scanner);
+                        } else if ("Customer".equals(currentRole)) {
+                            openCustomerMenu(scanner);
+                        } else {
+                            System.out.println("Invalid selection.");
                         }
                         break;
                     case "3":
-                        // Log the user out
+                        // Log out current user and clear session
                         logout();
                         break;
                     default:
@@ -91,33 +108,51 @@ public class Main {
         }
     }
 
-    /*
-    NEW: This method gives the Manager access to the inventory screen (Manager.java).
-    It checks the logged-in role first, so Admins, Cashiers and Customers cannot open it.
-     */
+    // =========================================================================
+    // ROLE ACCESS GUARD METHODS
+    // =========================================================================
+
+    // Ensures only Cashier accounts can access the Cashier POS Counter
+    private static void openCashierMenu(Scanner scanner) {
+        if (currentRole != null && currentRole.equals("Cashier")) {
+            Cashier.cashierMenu(scanner, currentUsername);
+        } else {
+            System.out.println("Access denied. Only Cashiers can open the POS Counter.");
+        }
+    }
+
+    // Ensures only Manager accounts can access the Inventory Management screen
     private static void openManagerMenu(Scanner scanner) {
         if (currentRole != null && currentRole.equals("Manager")) {
             Manager.managerMenu(scanner);
         } else {
-            System.out.println("Access denied. Only the Manager (Kitchen & Kennel Manager) can open inventory.");
+            System.out.println("Access denied. Only the Manager can open inventory.");
         }
     }
 
-    /*
-    This method checks if the "users.txt" file exists on our computer.
-    If it does not exist, it creates it and adds some default accounts so we can test the system.
-     */
+    // Ensures only Customer accounts can access the Customer Loyalty Portal
+    private static void openCustomerMenu(Scanner scanner) {
+        if (currentRole != null && currentRole.equals("Customer")) {
+            Customer.customerMenu(scanner, currentUsername);
+        } else {
+            System.out.println("Access denied. Only Customers can access this dashboard.");
+        }
+    }
+
+    // =========================================================================
+    // FILE INITIALIZATION & AUTHENTICATION
+    // =========================================================================
+
+    // Checks if "users.txt" exists; creates default test accounts if missing
     public static void checkOrCreateUserFile() {
         try {
             File file = new File(USER_FILE);
 
-            // createNewFile() returns true if the file was just created, false if it already exists
             if (file.createNewFile()) {
                 System.out.println("[SYSTEM INFO] 'users.txt' not found. Creating default accounts...");
 
-                // FileWriter writes text into our newly created file
+                // Write default accounts using 4 columns: UserID, Username, Password, Role
                 try (FileWriter writer = new FileWriter(file)) {
-                    // Write default staff and customer accounts. Format is: UserID,Username,Password,Role
                     writer.write("101,admin,admin123,Admin\n");
                     writer.write("102,manager,mgr123,Manager\n");
                     writer.write("103,cashier,cashier123,Cashier\n");
@@ -133,54 +168,44 @@ public class Main {
         }
     }
 
-    /*
-    This method asks for a username and password, then checks the text file to see if they match.
-     */
+    // Reads users.txt line-by-line to verify username and password
     public static boolean login(Scanner scanner) {
         System.out.println("\n--- STAFF & CUSTOMER LOGIN ---");
         System.out.print("Enter Username: ");
-        String inputUsername = scanner.nextLine().trim(); // Get username from keyboard
+        String inputUsername = scanner.nextLine().trim();
 
         System.out.print("Enter Password: ");
-        String inputPassword = scanner.nextLine().trim(); // Get password from keyboard
+        String inputPassword = scanner.nextLine().trim();
 
         File file = new File(USER_FILE);
 
         try (Scanner fileScanner = new Scanner(file)) {
-            // Read the file line by line until there are no more lines
             while (fileScanner.hasNextLine()) {
                 String line = fileScanner.nextLine().trim();
 
-                // Skip empty lines so the program doesn't crash
-                if (line.isEmpty()) {
-                    continue;
-                }
+                // Skip blank lines
+                if (line.isEmpty()) continue;
 
-                // Split the line into pieces using the comma as a separator
-                // For example: "101,admin,admin123,Admin" becomes an array of 4 strings
+                // Split CSV record by comma into 4 columns: ID, Username, Password, Role
                 String[] userDetails = line.split(",");
 
-                // Make sure the line actually has all 4 pieces of information
                 if (userDetails.length == 4) {
-                    // Assign each piece of the array to a readable variable name
-                    String storedId = userDetails[0].trim();       // 1st item: ID
-                    String storedUsername = userDetails[1].trim(); // 2nd item: Username
-                    String storedPassword = userDetails[2].trim(); // 3rd item: Password
-                    String storedRole = userDetails[3].trim();     // 4th item: Role
+                    // Fixed array indexing , [1], [2], [3]
+                    String storedId = userDetails.trim();       // Column 1: User ID
+                    String storedUsername = userDetails[1].trim(); // Column 2: Username
+                    String storedPassword = userDetails[2].trim(); // Column 3: Password
+                    String storedRole = userDetails[3].trim();     // Column 4: Role
 
-                    // Check if what the user typed matches what is saved in the file
-                    // .equals() is used to compare Strings in Java
+                    // Verify entered username and password
                     if (storedUsername.equals(inputUsername) && storedPassword.equals(inputPassword)) {
-
-                        // Match found! Save their info to the tracking variables
+                        // Save active user session details
                         currentUserId = storedId;
                         currentUsername = storedUsername;
                         currentRole = storedRole;
 
-                        System.out.println("\n Login Successful! Welcome, " + currentUsername + ".");
+                        System.out.println("\nLogin Successful! Welcome, " + currentUsername + ".");
                         System.out.println("Role Assigned: [" + currentRole + "]");
-
-                        return true; // Stop searching and return success
+                        return true;
                     }
                 }
             }
@@ -189,52 +214,43 @@ public class Main {
             return false;
         }
 
-        // If the loop finishes and didn't return true, it means no match was found
         System.out.println("Invalid Username or Password. Please try again.");
         return false;
     }
 
-    /*
-    This method simply resets the tracking variables back to null,
-    making the system forget who was logged in.
-     */
+    // Resets session tracking variables back to null
     public static void logout() {
         if (currentUsername != null) {
-            System.out.println("\n Logging out " + currentUsername + "...");
-
-            // Erase the current user's session data
+            System.out.println("\nLogging out " + currentUsername + "...");
             currentUserId = null;
             currentUsername = null;
             currentRole = null;
-
             System.out.println("You have been successfully logged out.");
         } else {
             System.out.println("No user is currently logged in.");
         }
     }
 
-    /*
-    This method shows different messages depending on the role of the person logged in.
-     */
+    // Displays permission details for the active role
     private static void displayRolePermissions() {
         System.out.println("\n--- ACCESS PERMISSIONS FOR ROLE: [" + currentRole.toUpperCase() + "] ---");
 
-        // Checks the value of currentRole and runs the matching block of code
         switch (currentRole) {
             case "Admin":
-                System.out.println("• Full Access: Manage Staff Accounts, Broadcast Promos, Review Sales Logs [1].");
+                System.out.println("• Full Access: Manage Staff Accounts, Broadcast Promos, Review Sales Logs.");
                 break;
             case "Manager":
-                System.out.println("• Inventory Control: View Low Stock Alerts (<=5), Restock Items, Update Prices [2].");
+                System.out.println("• Inventory Control: View Low Stock Alerts (<=5), Restock Items, Update Prices.");
                 break;
             case "Cashier":
-                System.out.println("• POS Operations: Process Orders, Calculate Pesos (₱) Totals, Issue Loyalty Stamps [2, 5].");
+                System.out.println("• POS Operations: Process Orders, Calculate Pesos (₱) Totals, Issue Loyalty Stamps.");
                 break;
             case "Customer":
-                System.out.println("• Customer View: Check 10-Visit Stamp Progress & Read Message Inbox [5].");
+                System.out.println("• Customer View: Check 10-Visit Stamp Progress & Read Message Inbox.");
                 break;
             default:
                 System.out.println("Unknown Role.");
         }
     }
 }
+

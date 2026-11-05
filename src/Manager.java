@@ -10,7 +10,7 @@ public class Manager {
         String id;
         String category;
         String name;
-        double price; // PHP
+        double price; // PHP (₱)
         int qty;
 
         Item(String id, String category, String name, double price, int qty) {
@@ -27,10 +27,9 @@ public class Manager {
     }
 
     static List<Item> inventory = new ArrayList<>();
-    static Scanner scanner; // shared with Main so only one Scanner reads the keyboard
+    static Scanner scanner; // Shared with Main
 
-    // ---------- Create default file if missing ----------
-
+    // Create default inventory file if missing
     static void checkOrCreateInventoryFile() {
         File file = new File(FILE_NAME);
         if (file.exists()) return;
@@ -64,22 +63,24 @@ public class Manager {
         }
     }
 
-    // ---------- Load / Save ----------
-
+    // Load inventory from inventory.txt
     static void loadInventory() {
         inventory.clear();
         File file = new File(FILE_NAME);
+
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 line = line.trim();
                 if (line.isEmpty()) continue;
                 String[] p = line.split("\\|");
-                if (p.length != 5) continue; // skip malformed lines
+                if (p.length != 5) continue;
+
                 try {
                     inventory.add(new Item(
-                            p[0].trim(), p[1].trim(), p[2].trim(),
-                            Double.parseDouble(p[3].trim()), Integer.parseInt(p[4].trim())));
+                        p.trim(), p[1].trim(), p[2].trim(),
+                        Double.parseDouble(p[3].trim()),
+                        Integer.parseInt(p[4].trim())));
                 } catch (NumberFormatException e) {
                     System.out.println("Skipped bad line: " + line);
                 }
@@ -89,6 +90,7 @@ public class Manager {
         }
     }
 
+    // Save inventory to inventory.txt
     static void saveInventory() {
         try (PrintWriter writer = new PrintWriter(new FileWriter(FILE_NAME))) {
             for (Item item : inventory) {
@@ -99,17 +101,16 @@ public class Manager {
         }
     }
 
-    // ---------- View stock ----------
-
     static void printSection(String title, String categoryPrefix) {
         System.out.println("\n" + title);
         System.out.printf("%-6s %-12s %-24s %12s %6s%n", "ID", "Category", "Item", "Price (PHP)", "Qty");
         System.out.println("-".repeat(64));
+
         for (Item item : inventory) {
             if (item.category.startsWith(categoryPrefix)) {
-                String flag = item.qty <= LOW_STOCK_LIMIT ? "  (Low Stock)" : "";
+                String flag = item.qty <= LOW_STOCK_LIMIT ? " (Low Stock)" : "";
                 System.out.printf("%-6s %-12s %-24s %12.2f %6d%s%n",
-                        item.id, item.category, item.name, item.price, item.qty, flag);
+                    item.id, item.category, item.name, item.price, item.qty, flag);
             }
         }
     }
@@ -120,18 +121,16 @@ public class Manager {
         printSection("2. Dog Drinks & Treats", "Dog");
     }
 
-    // ---------- Low Stock Detector ----------
-
-    /** Scans every item and warns when qty is 5 or less. Returns how many were flagged. */
+    // Scans every item and warns when qty <= 5
     static int lowStockDetector() {
         System.out.println("\n=== LOW STOCK SCAN ===");
         int flagged = 0;
-        for (Item item : inventory) {                 // Check next item
-            if (item.qty <= LOW_STOCK_LIMIT) {        // Qty is 5 or less?
+        for (Item item : inventory) {
+            if (item.qty <= LOW_STOCK_LIMIT) {
                 System.out.println("WARNING: " + item.name + " (" + item.id + ") - only " + item.qty + " left!");
                 flagged++;
             }
-        }                                             // More items? repeat until done
+        }
         if (flagged == 0) {
             System.out.println("All items are well stocked.");
         } else {
@@ -139,8 +138,6 @@ public class Manager {
         }
         return flagged;
     }
-
-    // ---------- Restock ----------
 
     static Item findItemById(String id) {
         for (Item item : inventory) {
@@ -153,7 +150,6 @@ public class Manager {
         System.out.println("\n=== RESTOCK ===");
         viewStock();
 
-        // Select item to restock
         Item item = null;
         while (item == null) {
             System.out.print("\nEnter item ID to restock, e.g. H101 (0 to cancel): ");
@@ -168,7 +164,6 @@ public class Manager {
             }
         }
 
-        // Enter shipment quantity (repeat until valid)
         int shipment = 0;
         boolean valid = false;
         while (!valid) {
@@ -177,7 +172,7 @@ public class Manager {
             try {
                 shipment = Integer.parseInt(input);
                 if (shipment > 0) {
-                    valid = true;                     // Qty valid? Yes
+                    valid = true;
                 } else {
                     System.out.println("Error: quantity must be greater than 0.");
                 }
@@ -186,20 +181,15 @@ public class Manager {
             }
         }
 
-        // Add to stock and save
         item.qty += shipment;
         saveInventory();
-
-        // Show new qty, back to menu
         System.out.println("Restocked! " + item.name + " now has " + item.qty + " in stock.");
     }
-
-    // ---------- Manager menu ----------
 
     public static void managerMenu(Scanner sc) {
         scanner = sc;
         checkOrCreateInventoryFile();
-        loadInventory();                              // Load inventory.txt
+        loadInventory();
 
         boolean running = true;
         while (running) {
@@ -209,6 +199,7 @@ public class Manager {
             System.out.println("3. Restock");
             System.out.println("4. Save and exit");
             System.out.print("Choose an option: ");
+
             String choice = scanner.nextLine().trim();
 
             switch (choice) {
